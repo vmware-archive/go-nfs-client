@@ -4,7 +4,7 @@
 package nfs
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"os"
 
@@ -191,7 +191,7 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 	switch whence {
 	case io.SeekStart:
 		if offset < 0 {
-			return int64(f.curr), fmt.Errorf("offset cannot be negative")
+			return int64(f.curr), errors.New("offset cannot be negative")
 		}
 		f.curr = uint64(offset)
 		return int64(f.curr), nil
@@ -199,7 +199,7 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 		f.curr = uint64(int64(f.curr) + offset)
 		return int64(f.curr), nil
 	case io.SeekEnd:
-		return int64(f.curr), fmt.Errorf("SeekEnd is not supported yet")
+		return int64(f.curr), errors.New("SeekEnd is not supported yet")
 	default:
 		// This indicates serious programming error
 		panic("Invalid whence")
