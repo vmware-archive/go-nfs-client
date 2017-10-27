@@ -202,7 +202,7 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 		return int64(f.curr), errors.New("SeekEnd is not supported yet")
 	default:
 		// This indicates serious programming error
-		panic("Invalid whence")
+		return int64(f.curr), errors.New("Invalid whence")
 	}
 }
 
