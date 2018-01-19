@@ -6,7 +6,7 @@ package xdr
 import (
 	"io"
 
-	xdr "github.com/davecgh/go-xdr/xdr2"
+	xdr "github.com/rasky/go-xdr/xdr2"
 )
 
 func Read(r io.Reader, val interface{}) error {
