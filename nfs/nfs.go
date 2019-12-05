@@ -27,6 +27,7 @@ const (
 	NFSProc3Write       = 7
 	NFSProc3Create      = 8
 	NFSProc3Mkdir       = 9
+	NFSProc3Symlink     = 10
 	NFSProc3Remove      = 12
 	NFSProc3RmDir       = 13
 	NFSProc3ReadDirPlus = 17

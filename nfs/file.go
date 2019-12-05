@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/vmware/go-nfs-client/nfs/rpc"
 	"github.com/vmware/go-nfs-client/nfs/util"
@@ -284,6 +285,75 @@ func (v *Target) Open(path string) (*File, error) {
 	}
 
 	return f, nil
+}
+
+// Symlink creates a symlink as where pointing to symlink
+func (v *Target) Symlink(where, symlink string) (*File, error) {
+	type symlinkdata3 struct {
+		SymlinkAttr Sattr3
+		SymlinkData []byte
+	}
+
+	type SymlinkArgs struct {
+		rpc.Header
+		Where   Diropargs3
+		Symlink symlinkdata3
+	}
+
+	type SymlinkRes struct {
+		obj     PostOpFH3
+		objAttr PostOpAttr
+		Wcc     WccData
+	}
+
+	symlinkName := filepath.Base(where)
+	symlinkDir := filepath.Dir(where)
+
+	_, fh, err := v.Lookup(symlinkDir)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := v.call(&SymlinkArgs{
+		Header: rpc.Header{
+			Rpcvers: 2,
+			Prog:    Nfs3Prog,
+			Vers:    Nfs3Vers,
+			Proc:    NFSProc3Symlink,
+			Cred:    v.auth,
+			Verf:    rpc.AuthNull,
+		},
+		Where: Diropargs3{
+			FH:       fh,
+			Filename: symlinkName,
+		},
+		Symlink: symlinkdata3{
+			SymlinkAttr: Sattr3{},
+			SymlinkData: []byte(symlink),
+		},
+	})
+
+	if err != nil {
+		util.Debugf("Symlink(%s): %s", where, err.Error())
+		return nil, err
+	}
+
+	symlinkres := &SymlinkRes{}
+	if err = xdr.Read(r, symlinkres); err != nil {
+		return nil, err
+	}
+
+	if !symlinkres.obj.IsSet {
+		return nil, errors.New("fh not set")
+	}
+
+	symFile := &File{
+		Target: v,
+		fsinfo: v.fsinfo,
+		fh:     symlinkres.obj.FH,
+	}
+
+	return symFile, nil
 }
 
 func min(x, y uint32) uint32 {
