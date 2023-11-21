@@ -18,6 +18,7 @@ import (
 type Target struct {
 	*rpc.Client
 
+	addr    string
 	auth    rpc.Auth
 	fh      []byte
 	dirPath string
@@ -39,6 +40,7 @@ func NewTarget(addr string, auth rpc.Auth, fh []byte, dirpath string) (*Target, 
 
 	vol := &Target{
 		Client:  client,
+		addr:    addr,
 		auth:    auth,
 		fh:      fh,
 		dirPath: dirpath,
@@ -72,6 +74,37 @@ func (v *Target) call(c interface{}) (io.ReadSeeker, error) {
 	}
 
 	return res, nil
+}
+
+func (v *Target) Dup() (*Target, error) {
+	m := rpc.Mapping{
+		Prog: Nfs3Prog,
+		Vers: Nfs3Vers,
+		Prot: rpc.IPProtoTCP,
+		Port: 0,
+	}
+
+	client, err := DialService(v.addr, m)
+	if err != nil {
+		return nil, err
+	}
+
+	vol := &Target{
+		Client:  client,
+		auth:    v.auth,
+		fh:      v.fh,
+		dirPath: v.dirPath,
+	}
+
+	fsinfo, err := vol.FSInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	vol.fsinfo = fsinfo
+	util.Debugf("%s:%s fsinfo=%#v", v.addr, v.dirPath, fsinfo)
+
+	return vol, nil
 }
 
 func (v *Target) FSInfo() (*FSInfo, error) {
